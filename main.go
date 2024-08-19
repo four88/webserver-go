@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"strconv"
@@ -30,6 +31,7 @@ func main() {
 
 	mux := http.NewServeMux()
 	apiCfg := &apiConfig{
+
 		fileserverHits: 0,
 	}
 
@@ -47,23 +49,26 @@ func main() {
 	})
 
 	mux.HandleFunc("POST /api/chirps", func(w http.ResponseWriter, r *http.Request) {
-			createChirp(w, r, *db)
-	})
-	
-	mux.HandleFunc("GET /api/chirps", func(w http.ResponseWriter, r *http.Request) {
-			getChirps(w, r, *db)
+		createChirp(w, r, *db)
 	})
 
-    mux.HandleFunc("GET /api/chirps/{chirpID}", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("GET /api/chirps", func(w http.ResponseWriter, r *http.Request) {
+		getChirps(w, r, *db)
+	})
+
+	mux.HandleFunc("GET /api/chirps/{chirpID}", func(w http.ResponseWriter, r *http.Request) {
 		idStg := r.PathValue("chirpID")
-		id , err := strconv.Atoi(idStg) 
-		if(err != nil){
+		id, err := strconv.Atoi(idStg)
+		if err != nil {
 			responseWithErr(w, "Invalid ID", 404)
 		}
-			getChirp(w, r, *db, id)
+		getChirp(w, r, *db, id)
 	})
 
-
+	mux.HandleFunc("POST /api/users", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Println(r.Body)
+		createUser(w, r, *db)
+	})
 
 	// Start the server
 	server := &http.Server{

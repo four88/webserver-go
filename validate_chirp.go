@@ -13,8 +13,8 @@ type requestBody struct {
 	Body string `json:"body"`
 }
 type responsePostBody struct {
-	Body string `json:"body"`
-  Id int `json:"id"`
+	Email string `json:"body"`
+	Id    int    `json:"id"`
 }
 
 func responseWithJSON(w http.ResponseWriter, data interface{}, statusCode int) {
@@ -68,15 +68,15 @@ func createChirp(w http.ResponseWriter, r *http.Request, db database.DB) {
 		responseWithErr(w, msg, statusCode)
 		return
 	} else {
-    data, err := db.CreateChirp(req.Body)
-	if(err != nil){
-		msg := "Error creating chirp"
-		statusCode = 400
-		responseWithErr(w, msg, statusCode)
-	}
+		data, err := db.CreateChirp(req.Body)
+		if err != nil {
+			msg := "Error creating chirp"
+			statusCode = 400
+			responseWithErr(w, msg, statusCode)
+		}
 
-    res.Body = data.Body
-    res.Id = data.Id
+		res.Email = data.Body
+		res.Id = data.Id
 	}
 
 	responseWithJSON(w, res, statusCode)
@@ -90,7 +90,7 @@ func getChirps(w http.ResponseWriter, r *http.Request, db database.DB) {
 		return
 	}
 	responseWithJSON(w, chirps, 200)
-}	
+}
 
 func getChirp(w http.ResponseWriter, r *http.Request, db database.DB, id int) {
 	chirp, err := db.GetChirp(id)
@@ -101,4 +101,3 @@ func getChirp(w http.ResponseWriter, r *http.Request, db database.DB, id int) {
 	}
 	responseWithJSON(w, chirp, 200)
 }
-
