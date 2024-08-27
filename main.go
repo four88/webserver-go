@@ -4,13 +4,16 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"strconv"
 
 	"github.com/four88/webserver/database"
+	"github.com/joho/godotenv"
 )
 
 type apiConfig struct {
 	fileserverHits int
+	jwtSecret      string
 }
 
 func (cfg *apiConfig) middlewareMetricsInc(next http.Handler) http.Handler {
@@ -23,6 +26,12 @@ func (cfg *apiConfig) middlewareMetricsInc(next http.Handler) http.Handler {
 }
 
 func main() {
+	// load env variables
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatalf("Error loading .env file")
+	}
+
 	// Initialize the database
 	db, err := database.NewDB("database.json")
 	if err != nil {
@@ -31,8 +40,8 @@ func main() {
 
 	mux := http.NewServeMux()
 	apiCfg := &apiConfig{
-
 		fileserverHits: 0,
+		jwtSecret:      os.Getenv("JWT_SECRET"),
 	}
 
 	// File server handler with metrics middleware
@@ -69,6 +78,14 @@ func main() {
 		fmt.Println(r.Body)
 		createUser(w, r, *db)
 	})
+
+	mux.Handle("POST /api/login", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		login(w, r, *db, apiCfg.jwtSecret)
+	}))
+
+	mux.Handle("PUT /api/users", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		handleCheckToken(w, r, *db, apiCfg.jwtSecret)
+	}))
 
 	// Start the server
 	server := &http.Server{

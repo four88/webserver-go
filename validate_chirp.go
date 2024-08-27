@@ -2,9 +2,7 @@ package main
 
 import (
 	"encoding/json"
-	"log"
 	"net/http"
-	"strings"
 
 	"github.com/four88/webserver/database"
 )
@@ -15,39 +13,6 @@ type requestBody struct {
 type responsePostBody struct {
 	Email string `json:"body"`
 	Id    int    `json:"id"`
-}
-
-func responseWithJSON(w http.ResponseWriter, data interface{}, statusCode int) {
-	res, err := json.Marshal(data)
-	if err != nil {
-		statusCode = 500
-		log.Printf("Error marshalling JSON: %s", err)
-		w.WriteHeader(500)
-		return
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(statusCode)
-	w.Write(res)
-}
-
-func responseWithErr(w http.ResponseWriter, msg string, statusCode int) {
-	w.WriteHeader(statusCode)
-	w.Write([]byte(msg))
-}
-
-func profaneWords(sentence string) string {
-	profaneWords := []string{"sharbert", "kerfuffle", "fornax"}
-	listWord := strings.Split(sentence, " ")
-
-	for i, word := range listWord {
-		for _, profaneWord := range profaneWords {
-			if strings.ToLower(word) == profaneWord {
-				listWord[i] = "****"
-			}
-		}
-	}
-
-	return strings.Join(listWord, " ")
 }
 
 func createChirp(w http.ResponseWriter, r *http.Request, db database.DB) {
