@@ -87,6 +87,14 @@ func main() {
 		handleCheckToken(w, r, *db, apiCfg.jwtSecret)
 	}))
 
+	mux.Handle("POST /api/refresh", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		handleRefresh(w, r, *db)
+	}))
+
+	mux.Handle("POST /api/revoke", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		handleRevolk(w, r, *db)
+	}))
+
 	// Start the server
 	server := &http.Server{
 		Addr:    ":8080",

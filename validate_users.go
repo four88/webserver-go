@@ -34,7 +34,8 @@ type requestUserPutBody struct {
 
 type responseLogin struct {
 	responsePostUser
-	Token string `json:"token"`
+	Token        string `json:"token"`
+	RefreshToken string `json:"refresh_token"`
 }
 
 func createUser(w http.ResponseWriter, r *http.Request, db database.DB) {
@@ -83,7 +84,7 @@ func login(w http.ResponseWriter, r *http.Request, db database.DB, secretKey str
 		return
 	}
 	if req.ExipiresIn == 0 {
-		req.ExipiresIn = 86400
+		req.ExipiresIn = 3600
 	}
 	// gerate token
 	token, err := createJWT(strconv.Itoa(data.Id), secretKey, int64(req.ExipiresIn))
@@ -97,9 +98,12 @@ func login(w http.ResponseWriter, r *http.Request, db database.DB, secretKey str
 	res.Email = data.Email
 	res.Id = data.Id
 	res.Token = token
+	res.RefreshToken = data.RefreshToken
 	responseWithJSON(w, res, statusCode)
 }
 
+// TODO : need to check refresh toekn and get user id
+// now worked only jwt token. Refresh token need to be checked
 func handleCheckToken(w http.ResponseWriter, r *http.Request, db database.DB, secretKey string) {
 	var req requestUserPutBody
 	var res responsePutUser

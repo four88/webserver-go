@@ -3,14 +3,17 @@ package database
 import (
 	"errors"
 	"fmt"
+	"time"
 
 	"golang.org/x/crypto/bcrypt"
 )
 
 type User struct {
-	Email    string `json:"email"`
-	Id       int    `json:"id"`
-	Password []byte `json: "password"`
+	Email        string `json:"email"`
+	Id           int    `json:"id"`
+	Password     []byte `json: "password"`
+	RefreshToken string `json: "refresh_token"`
+	ExpiryTime   string `json: "expiry_time"`
 }
 
 type UserResponse struct {
@@ -20,8 +23,9 @@ type UserResponse struct {
 }
 
 type UserWithoutPwd struct {
-	Email string `json:"email"`
-	Id    int    `json:"id"`
+	Email        string `json:"email"`
+	Id           int    `json:"id"`
+	RefreshToken string `json: "refresh_token"`
 }
 
 func (db *DB) CreateUser(email string, password string) (User, error) {
@@ -64,8 +68,27 @@ func (db *DB) Login(email string, password string) (
 			if err != nil {
 				return UserWithoutPwd{}, errors.New("Invalid Password")
 			}
+			refreshToken, err := generateRefreshToken()
+			if err != nil {
+				return UserWithoutPwd{}, err
+			}
+			dbStructure.Users[user.Id] = User{
+				Email:        user.Email,
+				Id:           user.Id,
+				Password:     user.Password,
+				RefreshToken: refreshToken,
+				ExpiryTime:   time.Now().AddDate(0, 0, 60).Format("2006-01-02 15:04:05"),
+			}
+			if err := db.writeDB(*dbStructure); err != nil {
+				return UserWithoutPwd{}, err
+			}
 
-			userWithoutPwd := UserWithoutPwd{Email: user.Email, Id: user.Id}
+			userWithoutPwd := UserWithoutPwd{
+				Email:        user.Email,
+				Id:           user.Id,
+				RefreshToken: refreshToken,
+			}
+
 			return userWithoutPwd, nil
 		} else {
 			return UserWithoutPwd{}, errors.New("User not found")
@@ -93,7 +116,7 @@ func (db *DB) GetUserAndUpdate(id int, email string, password string) (UserRespo
 		errors.New("Error in hashing")
 		fmt.Println(err)
 	}
-	dbStructure.Users[id] = User{Id: id, Email: email, Password: hashpassword}
+	dbStructure.Users[id] = User{Id: id, Email: email, Password: hashpassword, ExpiryTime: user.ExpiryTime, RefreshToken: user.RefreshToken}
 	if err := db.writeDB(*dbStructure); err != nil {
 		return UserResponse{}, err
 	}
