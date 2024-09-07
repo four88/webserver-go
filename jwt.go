@@ -7,12 +7,12 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-func createJWT(userID string, secretKey string, expiresInSeconds int64) (string, error) {
+func createJWT(userID string, secretKey string) (string, error) {
 	// Create the JWT claims
 	claims := jwt.RegisteredClaims{
 		Issuer:    "chirpy",
 		IssuedAt:  jwt.NewNumericDate(time.Now().UTC()),
-		ExpiresAt: jwt.NewNumericDate(time.Now().UTC().Add(time.Duration(expiresInSeconds) * time.Second)),
+		ExpiresAt: jwt.NewNumericDate(time.Now().UTC().Add(time.Duration(60) * time.Second)),
 		Subject:   userID,
 	}
 
@@ -36,14 +36,14 @@ func checkAndClaimToken(tokenString string, jwtSecret string) (int, error) {
 		return 0, err
 	}
 
-	if claim, ok := token.Claims.(*jwt.RegisteredClaims); ok && token.Valid {
+	claim, ok := token.Claims.(*jwt.RegisteredClaims)
+	if ok && token.Valid {
 		userIdString := claim.Subject
 		userID, err := strconv.Atoi(userIdString)
 		if err != nil {
 			return 0, err
 		}
 		return userID, nil
-	} else {
-		return 0, err
 	}
+	return 0, err
 }

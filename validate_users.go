@@ -17,8 +17,9 @@ type requestUserPostBody struct {
 }
 
 type responsePostUser struct {
-	Id    int    `json:"id"`
-	Email string `json:"email"`
+	Id          int    `json:"id"`
+	Email       string `json:"email"`
+	IsChirpyRed bool   `json:"is_chirpy_red"`
 }
 
 type responsePutUser struct {
@@ -36,6 +37,7 @@ type responseLogin struct {
 	responsePostUser
 	Token        string `json:"token"`
 	RefreshToken string `json:"refresh_token"`
+	IsChirpyRed  bool   `json:"is_chirpy_red"`
 }
 
 func createUser(w http.ResponseWriter, r *http.Request, db database.DB) {
@@ -60,6 +62,7 @@ func createUser(w http.ResponseWriter, r *http.Request, db database.DB) {
 
 	res.Email = data.Email
 	res.Id = data.Id
+	res.IsChirpyRed = data.IsChirpyRed
 
 	responseWithJSON(w, res, statusCode)
 }
@@ -87,7 +90,7 @@ func login(w http.ResponseWriter, r *http.Request, db database.DB, secretKey str
 		req.ExipiresIn = 3600
 	}
 	// gerate token
-	token, err := createJWT(strconv.Itoa(data.Id), secretKey, int64(req.ExipiresIn))
+	token, err := createJWT(strconv.Itoa(data.Id), secretKey)
 	if err != nil {
 		fmt.Println(err)
 		msg := "Error generating token"
@@ -99,12 +102,13 @@ func login(w http.ResponseWriter, r *http.Request, db database.DB, secretKey str
 	res.Id = data.Id
 	res.Token = token
 	res.RefreshToken = data.RefreshToken
+	res.IsChirpyRed = data.IsChirpyRed
 	responseWithJSON(w, res, statusCode)
 }
 
 // TODO : need to check refresh toekn and get user id
 // now worked only jwt token. Refresh token need to be checked
-func handleCheckToken(w http.ResponseWriter, r *http.Request, db database.DB, secretKey string) {
+func handleUpdateUser(w http.ResponseWriter, r *http.Request, db database.DB, secretKey string) {
 	var req requestUserPutBody
 	var res responsePutUser
 	decoder := json.NewDecoder(r.Body)

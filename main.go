@@ -14,6 +14,7 @@ import (
 type apiConfig struct {
 	fileserverHits int
 	jwtSecret      string
+	apiKey         string
 }
 
 func (cfg *apiConfig) middlewareMetricsInc(next http.Handler) http.Handler {
@@ -42,6 +43,7 @@ func main() {
 	apiCfg := &apiConfig{
 		fileserverHits: 0,
 		jwtSecret:      os.Getenv("JWT_SECRET"),
+		apiKey:         os.Getenv("API_KEY"),
 	}
 
 	// File server handler with metrics middleware
@@ -58,11 +60,11 @@ func main() {
 	})
 
 	mux.HandleFunc("POST /api/chirps", func(w http.ResponseWriter, r *http.Request) {
-		createChirp(w, r, *db)
+		createChirp(w, r, *db, apiCfg.jwtSecret)
 	})
 
 	mux.HandleFunc("GET /api/chirps", func(w http.ResponseWriter, r *http.Request) {
-		getChirps(w, r, *db)
+		getChirps(w, r, *db, apiCfg.jwtSecret)
 	})
 
 	mux.HandleFunc("GET /api/chirps/{chirpID}", func(w http.ResponseWriter, r *http.Request) {
@@ -84,16 +86,29 @@ func main() {
 	}))
 
 	mux.Handle("PUT /api/users", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		handleCheckToken(w, r, *db, apiCfg.jwtSecret)
+		handleUpdateUser(w, r, *db, apiCfg.jwtSecret)
 	}))
 
 	mux.Handle("POST /api/refresh", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		handleRefresh(w, r, *db)
+		handleRefresh(w, r, *db, apiCfg.jwtSecret)
 	}))
 
 	mux.Handle("POST /api/revoke", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		handleRevolk(w, r, *db)
 	}))
+
+	mux.HandleFunc("DELETE /api/chirps/{chirpID}", func(w http.ResponseWriter, r *http.Request) {
+		idStg := r.PathValue("chirpID")
+		id, err := strconv.Atoi(idStg)
+		if err != nil {
+			responseWithErr(w, "Invalid ID", 404)
+		}
+		deleteChrips(w, r, *db, id, apiCfg.jwtSecret)
+	})
+
+	mux.HandleFunc("POST /api/polka/webhooks", func(w http.ResponseWriter, r *http.Request) {
+		updateMemberHook(w, r, *db, apiCfg.apiKey)
+	})
 
 	// Start the server
 	server := &http.Server{
